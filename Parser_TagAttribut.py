@@ -1,6 +1,6 @@
-## Attribute and Tag finder for all the collections ##
-# =================================================== #
-
+###Attribute and Tag finder for all the collections
+#===================================================#
+############################################ Imports ############################################
 import xml.etree.ElementTree as ET
 import csv
 from lxml import etree
@@ -9,9 +9,9 @@ import re
 import ntpath
 import pandas as pd
 from datetime import datetime
+import argparse
 
 ####################################### Default Variables #######################################
-
 allTags = [] #NEW (All Tags)
 allAtrrib = [] #NEW (All Attributes)
 clearTags = {} #NEW (Unique TagNames with the number of repitation in a dictionary)
@@ -19,8 +19,16 @@ clearAttribs = {} #NEW (Unique Attribute with the number of repitation in a dict
 att = [] #NEW (Final Unique attributes with frequencies)
 tg = [] #NEW (Final Unique Tags)
 
-######################################### Parse each XML #########################################
+# create the parser, add an argument for the input directory, parse the command line arguments
+parser = argparse.ArgumentParser(description='Attribute and Tag finder for all the collections')
+parser.add_argument('-i', '--input_directory', type=str, help='Path to the input directory')
+parser.add_argument('-o', '--output_directory', type=str, help='Path to the input directory')
+args = parser.parse_args()
 
+#Date & Time
+now = datetime.now()
+end = now.strftime("%H:%M:%S")
+######################################### Parse each XML #########################################
 def parseAll(filename):
     pathName = []
     print("Parsing ---------------------------------------- {}".format(filename.split('/')[2]))
@@ -54,7 +62,6 @@ def parseAll(filename):
             clearAttribs[keys] += 1
 
 ######################## From running the function to Write the results ########################
-
 def get(directory):
     files = listdir(directory)
     files.sort()
@@ -70,12 +77,14 @@ def get(directory):
         tg.append([clearTags_keys,clearTags_values])
 
     ## Write to the text file
-    with open("Output/txt/Tag_Attribute-{}.txt".format(directory.split("/")[-1]), 'w') as f:
+    with open("{}.txt".format(args.output_directory), 'w') as f:
         f.write("#{} List of attributes and Frequency:\n{} \n \n".format(len(att), att))
         f.write("List of attributes:\n{} \n".format(list(i[0] for i in att)))
         f.write("\n------------------------------------------------------------------------------------------\n \n".format(len(att), list(i[0] for i in att)))
         f.write("#{} List of Tags and Frequency:\n{} \n \n".format(len(tg), tg))
         f.write("List of Tags:\n{} \n \n".format(list(i[0] for i in tg)))
+
+
 
     ## We have the all tags and attributes used in institution by now! Now we can use them tot check for errors:
     ## TEST
@@ -86,9 +95,12 @@ def get(directory):
     print("- - - - - - - - - - - - - - - - - - - - - - - - - - - -")
     print("clean attribs ------------------------------{}:{}".format(len(clearAttribs),clearAttribs))
 
+    ## Print the current time
+    print(end)
+
 ######################## Final Run ########################
 def run():
-    directory = 'Tests/LDLContent'
+    directory = args.input_directory
     data = get(directory)
     return data
 run()
