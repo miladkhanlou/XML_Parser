@@ -66,18 +66,26 @@ def parseAll(filename):
 
 ####################################### only write the unique Paths to a dictionary #######################################
 pathsToWrite= {}
+uniqueErrors = []
 ## DUPLICATION HANDELING AND COUNT INTO A DICTIONARY ##
 def toList(ntpath):
-    for i in parseAll(ntpath):
-        paths.append(i)
+    #a. Handeling Duplicated Errors in attributes and tags
+    for err in errors:
+        if err not in uniqueErrors:
+            uniqueErrors.append(err)
+        else:
+            continue
+
+    #b. Getting tags , Handling Duplicated paths      
+    for ps in parseAll(ntpath):
+        paths.append(ps)
     check = set()
     for p in paths:
-        key = p
         if p not in check:
             check.add(p)
-            pathsToWrite[key] = 1
+            pathsToWrite[p] = 1
         else:
-            pathsToWrite[key] += 1
+            pathsToWrite[p] += 1
     return pathsToWrite
 
 ####################################### WRITING 'ERRORS', 'COUNTER', 'DUPLICATIONS' TO COLUMNS #######################################
@@ -100,11 +108,12 @@ def get(directory):
 
     ## WRITING 'ERRORS' TO A COLUMN ACCORDING TO EACH ROW IN xml_paths ##
     for xmls in xml_paths['XMLPath']:
-        x = ''
-        for errs in errors:
+        x = []
+        for errs in uniqueErrors:
             if errs in xmls:
-                x = errs
-        xml_paths['errors'].append(x)
+                x.append(errs)
+        xml_paths['errors'].append(", ".join(xs for xs in x))
+
 
     ## TEST:
     print(len(xml_paths['XMLPath']))
