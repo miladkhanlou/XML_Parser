@@ -4,8 +4,8 @@ A tool for parsing Louisiana Digital Library XML files as one of our ETL pipelin
 On commandline we can tell the code accomplish each of the following tasks separately:</br>
 
 #### 1. Get all the unique Tags and attributes, and write them into a CSV
-&ensp;i. (-o “name of your tag/attirbute csv) </br>
-&ensp;ii. (-i “input directory of XML Mods files to find tags and attributes”)</br>
+&emsp;&emsp;i. (-o “name of your tag/attirbute csv) </br>
+&emsp;&emsp;ii. (-i “input directory of XML Mods files to find tags and attributes”)</br>
 #### 2. Get XML Paths with Frequency , and write them into a CSV , With the option of finding misspelled / non-existent tags and attributes (-e)
 &ensp;This requires input tag/attribute csv (-e “input tag/attribute csv filename and path”)</br>
 &emsp;&emsp;i. (-o “name of your xml path freq csv) -> used to generate the master xml string file (dictionary)</br>
