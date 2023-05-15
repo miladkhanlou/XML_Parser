@@ -28,8 +28,6 @@ Attrib_errors = [] #We can have 2 columns for errors
 parser = argparse.ArgumentParser(description='Attribute and Tag finder for all the collections')
 parser.add_argument('-iat', '--at_directory', type=str, help='Path for getting attributes and tags', required=True)
 parser.add_argument('-oat', '--output_attribsTags', type=str, help='Path to the output attribute and tag list text file', required=False)
-parser.add_argument('-oa', '--output_attribs', type=str, help='Path to the output attributelist text file', required=False)
-parser.add_argument('-ot', '--output_tags', type=str, help='Path to the output tag list text file', required=False)
 parser.add_argument('-i', '--input_directory', type=str, help='Path to the input directory', required=False)
 parser.add_argument('-o', '--output_directory', type=str, help='Path to the output csv containing paths, frequency and error reports', required=False)
 parser.add_argument('-p', '--output_path', type=str, help='Path to the output csv containing only paths and frequency', required=False)
@@ -60,16 +58,17 @@ uniqueTag = [] #NEW (Name of the unique attributes)
 uniqueAttrib = [] #NEW (Name of the unique Unique Tags)
 
 def MOD_Parse(mods):
-    print("Parsing the source MODS ---------------------------------------- {}".format(mods.split('/')[-1]))
-    root = ET.iterparse(mods, events=('start', 'end'))
-    #Get all the attribute and tags
-    for a,b in root:
-        if a == 'start':
-            allTags.append(b.tag.split("}")[1])
-            if len(b.attrib) > 0:
-                attrib_list = b.attrib
-                for k,v in attrib_list.items():
-                    allAtrrib.append(k)
+    for mod in mods:
+        print("Parsing the source MODS ---------------------------------------- {}".format(mod.split('/')[-1]))
+        root = ET.iterparse(mod, events=('start', 'end'))
+        #Get all the attribute and tags
+        for a,b in root:
+            if a == 'start':
+                allTags.append(b.tag.split("}")[1])
+                if len(b.attrib) > 0:
+                    attrib_list = b.attrib
+                    for k,v in attrib_list.items():
+                        allAtrrib.append(k)
 
 def unique_tag_attrib():
     ##uniqueTag_Dict = {Attribute_Name : Number of repitation}
@@ -125,26 +124,7 @@ def dataToCsv():
     df_attTG = pd.DataFrame(data)
     df_attTG.to_csv("{}.csv".format(args.output_attribsTags), index=0)
 
-    #to write attribute csv
-    df_attTG = pd.DataFrame({'atributes': data['atributes'],'atributes frequency': data['atributes frequency']})
-    df_attTG.to_csv("{}.csv".format(args.output_attribs), index=0)
-
-    #to write tags csv
-    df_attTG = pd.DataFrame({'tags': data['tags'],'tags frequency': data['tags frequency']})
-    df_attTG.to_csv("{}.csv".format(args.output_tags), index=0)
-
-
 #<<<<<<<<<<<<<<<<<  Part II: Get the XML Path , check for spelling and errors in each xml path according to Part1 >>>>>>>>>>>>>>>>>>>>>#
-def xml_dir(Pathdirectory):
-    #Write this as function like load xml mods
-    xmlPaths = []
-    files = listdir(Pathdirectory)
-    files.sort()
-    for file in files:
-        if file.endswith(".xml"):
-            xmlPaths.append("{directory}/{file_name}".format(directory =Pathdirectory, file_name= file))
-    return xmlPaths
-
 ######## Parse and get all the paths and errors ########
 def parseAll(filename):
     for paths in filename:
@@ -262,11 +242,11 @@ def toCSV(allPaths, allErrors):
 def main():
     directory = args.at_directory #get all the tgas and attributes
     sourceMODs = MODs(directory)
+    getAttributeTags = MOD_Parse(sourceMODs)
     GetUniques = unique_tag_attrib()
     to_csv = dataToCsv()
     Pathdirectory = args.input_directory #get xpaths and check each one with attribute and tags
-    data = xml_dir(Pathdirectory) #By now we have two lists of tags and attributes
-    parseTo = parseAll(data)
+    parseTo = parseAll(sourceMODs)
     getUniquesPaths = PathRepeatCheck(parseTo)
     getUniqueErrors = ErrorRepeatCheck()
     writeToCSV = toCSV(getUniquesPaths, getUniqueErrors)
