@@ -3,15 +3,19 @@ A tool for parsing Louisiana Digital Library XML files as one of our ETL pipelin
 </br>
 On commandline we can tell the code accomplish each of the following tasks separately:</br>
 
-a. Parses into a source of LSU MODs (in the form of xml) and gets the data bellow and put them into a csv as a source of correct and all the tags and attributes in that collection of content:</br>
+###1. Get all the unique Tags and attributes, and write them into a CSV </br>
+&ensp;i. (-o “name of your tag/attirbute csv) </br>
+&ensp;ii. (-i “input directory of XML Mods files to find tags and attributes”)</br>
+###2. Get XML Paths with Frequency , and write them into a CSV , With the option of finding misspelled / non-existent tags and attributes (-e) </br>
+&ensp;This requires input tag/attribute csv (-e “input tag/attribute csv filename and path”)</br>
+&emsp;i. (-o “name of your xml path freq csv) -> used to generate the master xml string file (dictionary)</br>
+&emsp;ii. (-i “input directory of XML Mods files to find XML strings”) </br>
 
-  i. all the unique attributes in xml</br>
+c. Build workbench csv, with the option of finding misspelled / non-existent tags and attributes (-e) </br>
+&ensp;This requires input tag/attribute csv (-e “input tag/attribute csv filename and path”)</br>
+&emsp;i. (-o “name of your workbench csv) </br>
+&emsp;ii. (-m “(master xml string dictionary)” </br>
+&emsp;iii. (-I “path to the XML MODS that we are ingesting”)</br>
 
-  ii. all the unique tags</br>
-
-  iii. gets the number of times attributes and tags where duplicated</br>
-
-b. Parses into a target destination and get the xml paths</br>
-
-c. Compaire tags and attributes of the written XML paths with the list of tags and attributes from 'a' and if there were any new ones or misspelled one it will write that to a column called Error</br>
+XML2Workbench – taking MODS XML files and converting them to a workbench csv. 
 
