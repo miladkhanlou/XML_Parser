@@ -11,7 +11,7 @@ On commandline we can tell the code accomplish each of the following tasks separ
 &emsp;&emsp;i. (-o “name of your xml path freq csv) -> used to generate the master xml string file (dictionary)</br>
 &emsp;&emsp;ii. (-i “input directory of XML Mods files to find XML strings”) </br>
 
-#### 3. Build workbench csv, with the option of finding misspelled / non-existent tags and attributes (-e)
+#### 3. Build workbench csv, with the option of finding misspelled / non-existent tags and attributes (In Progress)
 &ensp;This requires input tag/attribute csv (-e “input tag/attribute csv filename and path”)</br>
 &emsp;&emsp;i. (-o “name of your workbench csv) </br>
 &emsp;&emsp;ii. (-m “(master xml string dictionary)” </br>
