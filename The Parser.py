@@ -14,6 +14,7 @@ import pandas as pd
 from datetime import datetime
 import argparse
 
+
 ####################################### Global Variables #######################################
 paths = [] #paths that will be written
 errors = [] #Attribute and Tag Errors
@@ -25,26 +26,28 @@ Attrib_errors = [] #We can have 2 columns for errors
 
 
 # create the parser, add an argument for the input directory, parse the command line arguments
-parser = argparse.ArgumentParser(description='Attribute and Tag finder for all the collections')
-parser.add_argument('-iat', '--at_directory', type=str, help='Path for getting attributes and tags', required=True)
-parser.add_argument('-oat', '--output_attribsTags', type=str, help='Path to the output attribute and tag list text file', required=False)
-parser.add_argument('-i', '--input_directory', type=str, help='Path to the input directory', required=False)
-parser.add_argument('-o', '--output_directory', type=str, help='Path to the output csv containing paths, frequency and error reports', required=False)
-parser.add_argument('-p', '--output_path', type=str, help='Path to the output csv containing only paths and frequency', required=False)
+def process_command_line_arguments():
+    parser = argparse.ArgumentParser(description='Attribute and Tag finder for all the collections')
+    parser.add_argument('-i', '--input_directory', type=str, help='Path to the input directory', required=False)
+    parser.add_argument('-oat', '--output_attribsTags', type=str, help='Path to the output attribute and tag list text file', required=False)
+    parser.add_argument('-c', '--input_csv', type=str, help='Path to the input directory', required=False)
+    parser.add_argument('-o', '--output_directory', type=str, help='Path to the output csv containing paths, frequency and error reports', required=False)
 
-args = parser.parse_args()
+    args = parser.parse_args()
+
+    return args
 
 #<<<<<<<<<<<<<<<<< PART I: Parse xmls and get attribute and tags and write to text file >>>>>>>>>>>>>>>>>>>>>#
 #****************** OPTION 1 | Parse xmls and get all the tags and attributes ******************#
 
 #2. Triger the function to get and Write the unique tags and attributes to csv
-def MODs(directory):
+def MODs(arg):
     modsPaths = []
-    files = listdir(directory)
+    files = listdir(arg.input_directory)
     files.sort()
     for file in files:
         if file.endswith(".xml"):
-            modsPaths.append("{directory}/{file_name}".format(directory =directory, file_name= file))
+            modsPaths.append("{directory}/{file_name}".format(directory = arg.input_directory, file_name= file))
 
     return modsPaths
 
@@ -59,7 +62,7 @@ uniqueAttrib = [] #NEW (Name of the unique Unique Tags)
 
 def MOD_Parse(mods):
     for mod in mods:
-        print("Parsing the source MODS ---------------------------------------- {}".format(mod.split('/')[-1]))
+        print("Parsing the source MODs for tags/Attributes---------------------------------------- {}".format(mod.split('/')[-1]))
         root = ET.iterparse(mod, events=('start', 'end'))
         #Get all the attribute and tags
         for a,b in root:
@@ -91,13 +94,8 @@ def unique_tag_attrib():
         else:
             uniqueAttrib_Dict[keys] += 1
 
-    #lists of attribute names and Tag names for error processing
-    for each in uniqueAttrib_Dict.keys():
-        uniqueAttrib.append(each)
-    for Tags in uniqueTag_Dict.keys():
-        uniqueTag.append(Tags)
 
-def dataToCsv():
+def dataToCsv(arg):
     data = {
         'atributes': [],
         'atributes frequency' : [],
@@ -122,15 +120,26 @@ def dataToCsv():
 
     #to write attribute and tags to csv
     df_attTG = pd.DataFrame(data)
-    df_attTG.to_csv("{}.csv".format(args.output_attribsTags), index=0)
+    df_attTG.to_csv("{}.csv".format(arg.output_attribsTags), index=0)
+    print("An attribute/Tag csv file saved in this directory: {directory}.csv".format(directory = arg))
 
 #<<<<<<<<<<<<<<<<<  Part II: Get the XML Path , check for spelling and errors in each xml path according to Part1 >>>>>>>>>>>>>>>>>>>>>#
+def inpute_attribs_tags(arg):
+    print("Reading the input csv, containing Attributes and Tags in LDL collections------------------")
+    df_attribTags = pd.read_csv(arg.input_csv)
+    columnNames = df_attribTags.columns.tolist()
+    data_dict =  {}
+    for columns in columnNames:
+        data_dict[columns] = list(df_attribTags[columns])
+    return data_dict
+
 ######## Parse and get all the paths and errors ########
-def parseAll(filename):
-    for paths in filename:
+def parseAll(mods,csv_input):
+    print(csv_input)
+    for mod in mods:
         pathName = []
-        print("Parsing ---------------------------------------- {}".format(paths.split('/')[-1])) ## IF FOLDER WITHIN FOLDER => CHANGE THE INDEX NUMBER
-        root = ET.iterparse(paths, events=('start', 'end'))
+        print("Parsing Target Mods to get xml paths, and error check ---------------------------------------- {}".format(mod.split('/')[-1])) ## IF FOLDER WITHIN FOLDER => CHANGE THE INDEX NUMBER
+        root = ET.iterparse(mod, events=('start', 'end'))
         for a,b in root:
             if a == 'start':
                 attribs = [] 
@@ -144,10 +153,10 @@ def parseAll(filename):
                         WriteAttributes.append([i,j]) #write as a list as we go into each attribute
 
                 ### A1) check for any miss-speling in tags and attributes
-                        if i not in uniqueAttrib:
+                        if i not in csv_input["atributes"]:
                             # errors.append(', '.join("{}".format(a[0]) for a in WriteAttributes)) #USED JOIN INSTEAD OF FORMAT
                             errors.append(i) #If we want to have 2 columns for errors for TAGS AND ATTRIBUTES, We can APPEND TO Attrib_errors
-                        if b.tag.split("}")[1] not in uniqueTag:
+                        if b.tag.split("}")[1] not in csv_input["tags"]:
                             errors.append(b.tag.split("}")[1]) #If we want to have 2 columns for errors for TAGS AND ATTRIBUTES, We can APPEND TO Tag_errors
                         else:
                             continue
@@ -161,7 +170,7 @@ def parseAll(filename):
                     yield '/'.join(pathName)
 
                 ### B2) check for any miss-speling in tags(No attributes as these are tags with no attrib)               
-                    if b.tag.split("}")[1] not in uniqueTag:
+                    if b.tag.split("}")[1] not in csv_input["tags"]:
                         errors.append(b.tag.split("}")[1]) #If we want to have 2 columns for errors for TAGS AND ATTRIBUTES, We can APPEND TO Tag_errors
                     else:
                         continue
@@ -171,7 +180,6 @@ def parseAll(filename):
         allPaths = []
         for Xpaths in pathName:
             allPaths.append(Xpaths)
-
     return(allPaths)
 
 ######## unique Paths ########
@@ -184,7 +192,7 @@ def PathRepeatCheck(ntpath):
             pathsAndCounts[p] = 1
         else:
             pathsAndCounts[p] += 1
-
+    print("Uniqe paths collected ------------")
     return pathsAndCounts
 
 ######## unique errors ########
@@ -197,10 +205,11 @@ def ErrorRepeatCheck():
         else:
             continue
 
+    print("Unique errors collected ------------")
     return uniqueErrors
 
 ######## write to csv ########
-def toCSV(allPaths, allErrors):
+def toCSV(allPaths, allErrors, arg):
 #Output to csv separate function
     xml_paths = {   
         "Repeated": [],
@@ -221,47 +230,36 @@ def toCSV(allPaths, allErrors):
                 x.append(errs)
         xml_paths['errors'].append(", ".join(xs for xs in x))
 
-    ## TEST:
-    print(len(xml_paths['XMLPath']))
-    print(len(xml_paths['errors']))
-    print(xml_paths['errors'])
-    print("Number of all xml Paths ------------------------------ {}".format(len(paths)))
-    print("Number of all Unique Paths ------------------------------{}".format(len(allPaths)))
-
     ## WRITE XML PATHS, ERROR REPORT TO CSV
     DF = pd.DataFrame(xml_paths)
     sorted = DF.sort_values("Repeated", ascending=False)
-    sorted.to_csv("{}.csv".format(args.output_directory), index=False)
+    sorted.to_csv("{}.csv".format(arg.output_directory), index=False)
+    print("A csv file containing unique LDL xml paths, saved in this directory: {directory}.csv".format(directory = arg))
 
-    ## WRITE ONLY XML PATHS TO CSV 
-    DFxmls = pd.DataFrame({"XMLPath": xml_paths["XMLPath"], 'Repeated': xml_paths['Repeated']})
-    sorted = DFxmls.sort_values("Repeated", ascending=False)
-    sorted.to_csv("{}.csv".format(args.output_path), index=False)
+    ## TEST:
+    # print(len(xml_paths['XMLPath']))
+    # print(len(xml_paths['errors']))
+    # print(xml_paths['errors'])
+    # print("Number of all xml Paths ------------------------------ {}".format(len(paths)))
+    # print("Number of all Unique Paths ------------------------------{}".format(len(allPaths)))
 
 ######################## Final Run: Get Attributes and Tag list | Get xml Paths | Found errors with comparing attribute & tags with xml paths  ########################
 def main():
-    directory = args.at_directory #get all the tgas and attributes
-    sourceMODs = MODs(directory)
-    getAttributeTags = MOD_Parse(sourceMODs)
-    GetUniques = unique_tag_attrib()
-    to_csv = dataToCsv()
-    Pathdirectory = args.input_directory #get xpaths and check each one with attribute and tags
-    parseTo = parseAll(sourceMODs)
-    getUniquesPaths = PathRepeatCheck(parseTo)
-    getUniqueErrors = ErrorRepeatCheck()
-    writeToCSV = toCSV(getUniquesPaths, getUniqueErrors)
+    args = process_command_line_arguments()
+    if args.input_directory and args.output_attribsTags:
+    # Run the function to get and write the unique tags and attributes (-i,-oat)
+        sourceMODs = MODs(args)
+        getAttributeTags = MOD_Parse(sourceMODs)
+        GetUniques = unique_tag_attrib()
+        attribTags2csv = dataToCsv(args)
 
+    elif args.input_directory and args.output_directory and args.input_csv:
+    # Run the function to get XML paths, check for errors, and write to CSV (-i,-o,-c)
+        sourceMODs = MODs(args)
+        imputcsv = inpute_attribs_tags(args)
+        parseTo = parseAll(sourceMODs,imputcsv)
+        getUniquesPaths = PathRepeatCheck(parseTo)
+        getUniqueErrors = ErrorRepeatCheck()
+        writeToCSV = toCSV(getUniquesPaths, getUniqueErrors, args)
 main()
-
-##For just getting taggs and attributes:
-# >>>python3 The\ Parser2.py -iat <location of source MODs> -oat <output csv location>
-
-##For getting only tags or only attributes:
-# >>>python3 The\ Parser2.py -iat Data/TheParser_Test/Source -ot Output/testTag
-# >>>python3 The\ Parser2.py -iat Data/TheParser_Test/Source -oa Output/testAtt
-
-##For getting xml paths, error report
-# >>>python3 The\ Parser2.py -at <location of source MODs> -ot <output csv location> -i <location of target MODs> -o <output final report csv location>
-
-##For getting xml paths
-# >>>python3 The\ Parser2.py -iat Data/TheParser_Test/Source -i Data/TheParser_Test/tryon -p Output/TryonTest
+# Latest Run Command>>> python3 The\ Parser6.py -i Data/TheParser_Test/Source -c Output/testMay15th.csv -o Output/TestMay16th 
